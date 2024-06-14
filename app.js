@@ -1,4 +1,5 @@
 require("dotenv").config();
+const md5 = require("md5");
 const express = require("express");
 const bodyParser = require("body-parser");
 const ejs = require("ejs");
@@ -36,9 +37,8 @@ app.get("/logout", function (req, res) {
 
 app.post("/register", async function (req, res) {
   const usernameNew = req.body.username;
-  const password = req.body.password;
+  const password = md5(req.body.password);
   const check = await collection.findOne({ username: usernameNew });
-  console.log(check);
   if (check === null) {
     collection.insertOne({ username: usernameNew, password: password });
     console.log("Registered successfully");
@@ -51,15 +51,18 @@ app.post("/register", async function (req, res) {
 
 app.post("/login", async function (req, res) {
   const usernameMain = req.body.username;
-  const passwordMain = req.body.password;
+  const passwordMain = md5(req.body.password);
   const result = await collection.findOne({
     username: usernameMain,
   });
-  console.log(result.password);
-  if (result.password === passwordMain) {
-    res.redirect("/secrets");
+  if (result === null) {
+    res.redirect("/register");
   } else {
-    res.redirect("/login");
+    if (result.password === passwordMain) {
+      res.redirect("/secrets");
+    } else {
+      res.redirect("/login");
+    }
   }
 });
 app.listen(3000, function () {

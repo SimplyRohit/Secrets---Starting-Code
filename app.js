@@ -1,3 +1,4 @@
+require("dotenv").config();
 const express = require("express");
 const bodyParser = require("body-parser");
 const ejs = require("ejs");
@@ -6,8 +7,7 @@ const app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static("public"));
 app.set("view engine", "ejs");
-const url =
-  "mongodb+srv://admin:admin@test.5n6toxx.mongodb.net/?retryWrites=true&w=majority&appName=Test";
+const url = process.env.DATABASE_URL;
 const client = new MongoClient(url);
 const db = client.db("Login-Register");
 const collection = db.collection("users");
@@ -38,13 +38,14 @@ app.post("/register", async function (req, res) {
   const usernameNew = req.body.username;
   const password = req.body.password;
   const check = await collection.findOne({ username: usernameNew });
-  if (check.username === usernameNew) {
-    console.log("Username already exists");
-    res.redirect("/register");
-  } else {
+  console.log(check);
+  if (check === null) {
     collection.insertOne({ username: usernameNew, password: password });
     console.log("Registered successfully");
     res.redirect("/login");
+  } else {
+    console.log("Username already exists");
+    res.redirect("/register");
   }
 });
 

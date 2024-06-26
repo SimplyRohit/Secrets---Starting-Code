@@ -1,5 +1,6 @@
 require("dotenv").config();
-const md5 = require("md5");
+const bcrypt = require("bcrypt");
+const saltRounds = 3;
 const express = require("express");
 const bodyParser = require("body-parser");
 const ejs = require("ejs");
@@ -37,7 +38,8 @@ app.get("/logout", function (req, res) {
 
 app.post("/register", async function (req, res) {
   const usernameNew = req.body.username;
-  const password = md5(req.body.password);
+  const hash = await bcrypt.hash(req.body.password, saltRounds);
+  const password = hash;
   const check = await collection.findOne({ username: usernameNew });
   if (check === null) {
     collection.insertOne({ username: usernameNew, password: password });
@@ -51,18 +53,20 @@ app.post("/register", async function (req, res) {
 
 app.post("/login", async function (req, res) {
   const usernameMain = req.body.username;
-  const passwordMain = md5(req.body.password);
+  const passwordMain = req.body.password;
   const result = await collection.findOne({
     username: usernameMain,
   });
   if (result === null) {
     res.redirect("/register");
   } else {
-    if (result.password === passwordMain) {
-      res.redirect("/secrets");
-    } else {
-      res.redirect("/login");
-    }
+    bcrypt.compare(passwordMain, result.password, function (err, result) {
+      if (result === true) {
+        res.redirect("/secrets");
+      } else {
+        res.redirect("/login");
+      }
+    });
   }
 });
 app.listen(3000, function () {
